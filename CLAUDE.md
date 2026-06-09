@@ -10,9 +10,6 @@
 - Test: Jest
 - Entorno: Docker Compose
 
-## Plugins de claude a utilizar
--Plugin oficial de MongoDB claude
-
 ## Como trabajar conmigo
 - Respeta el Stack, no pierdas tiempo en buscar alternativas, ya que es el stack fijo que disponemos
 - Si ves que requiero alguna librería ofrecela e informa sus beneficios
