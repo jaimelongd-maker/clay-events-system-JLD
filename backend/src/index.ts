@@ -5,11 +5,13 @@ import { connectMongo, closeMongo } from './infrastructure/mongo';
 import { getRedisClient } from './infrastructure/redis';
 import healthRouter from './routes/health';
 import eventsRouter from './routes/events';
+import metricsRouter from './routes/metrics';
 
 const app = express();
 app.use(express.json());
 app.use(healthRouter);
 app.use(eventsRouter);
+app.use(metricsRouter);
 
 // Analogía .NET: equivalente a IHostApplicationLifetime.ApplicationStopping
 async function shutdown(server: Server, signal: string): Promise<void> {
