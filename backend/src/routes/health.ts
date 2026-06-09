@@ -6,8 +6,8 @@ const router = Router();
 
 router.get('/health', async (_req: Request, res: Response): Promise<void> => {
   const [mongo, redis] = await Promise.all([
-    isMongoConnected(),
-    isRedisConnected(),
+    isMongoConnected().catch(() => false),
+    isRedisConnected().catch(() => false),
   ]);
 
   const healthy = mongo && redis;

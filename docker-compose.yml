@@ -56,6 +56,27 @@ services:
     volumes:
       - ./backend/src:/app/src
 
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: clay_worker
+    command: node dist/worker.js
+    environment:
+      NODE_ENV: development
+      MONGO_URI: mongodb://mongodb:27017/clay_events
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - clay_network
+    volumes:
+      - ./backend/src:/app/src
+
 networks:
   clay_network:
     driver: bridge

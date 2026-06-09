@@ -61,4 +61,20 @@ describe('POST /events', () => {
 
     expect(lpushMock).not.toHaveBeenCalled();
   });
+
+  it('returns 400 when payload is empty', async () => {
+    const res = await request(app).post('/events').send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors).toBeDefined();
+  });
+
+  it('returns 500 when Redis throws', async () => {
+    lpushMock.mockRejectedValueOnce(new Error('Redis unavailable'));
+
+    const res = await request(app).post('/events').send(validEvent);
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to enqueue event');
+  });
 });

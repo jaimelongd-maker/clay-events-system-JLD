@@ -12,8 +12,13 @@ router.post('/events', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  await getRedisClient().lpush('events:queue', JSON.stringify(result.data));
-  res.status(202).json({ queued: true });
+  try {
+    await getRedisClient().lpush('events:queue', JSON.stringify(result.data));
+    res.status(202).json({ queued: true });
+  } catch (err) {
+    console.error('Failed to enqueue event:', (err as Error).message);
+    res.status(500).json({ error: 'Failed to enqueue event' });
+  }
 });
 
 export default router;

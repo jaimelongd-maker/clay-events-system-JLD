@@ -51,4 +51,34 @@ describe('GET /health', () => {
     expect(res.body.status).toBe('degraded');
     expect(res.body.checks.redis).toBe(false);
   });
+
+  it('returns 503 when both services are down', async () => {
+    mongoMock.mockResolvedValue(false);
+    redisMock.mockResolvedValue(false);
+
+    const res = await request(app).get('/health');
+
+    expect(res.status).toBe(503);
+    expect(res.body.checks).toEqual({ mongo: false, redis: false });
+  });
+
+  it('returns 503 when isMongoConnected throws', async () => {
+    mongoMock.mockRejectedValue(new Error('Mongo unreachable'));
+    redisMock.mockResolvedValue(true);
+
+    const res = await request(app).get('/health');
+
+    expect(res.status).toBe(503);
+    expect(res.body.checks.mongo).toBe(false);
+  });
+
+  it('returns 503 when isRedisConnected throws', async () => {
+    mongoMock.mockResolvedValue(true);
+    redisMock.mockRejectedValue(new Error('Redis unreachable'));
+
+    const res = await request(app).get('/health');
+
+    expect(res.status).toBe(503);
+    expect(res.body.checks.redis).toBe(false);
+  });
 });
