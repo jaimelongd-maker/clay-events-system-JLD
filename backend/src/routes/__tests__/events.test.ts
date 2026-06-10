@@ -214,4 +214,14 @@ describe('DELETE /events', () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('Failed to clear events');
   });
+
+  it('returns 500 when Redis throws', async () => {
+    deleteManyMock.mockResolvedValue({ deletedCount: 0 });
+    delMock.mockRejectedValueOnce(new Error('Redis unavailable'));
+
+    const res = await request(app).delete('/events');
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to clear events');
+  });
 });

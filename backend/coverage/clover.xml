@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1781048886114" clover="3.2.0">
-  <project timestamp="1781048886114" name="All files">
-    <metrics statements="98" coveredstatements="96" conditionals="24" coveredconditionals="24" methods="14" coveredmethods="13" elements="136" coveredelements="133" complexity="0" loc="98" ncloc="98" packages="3" files="5" classes="5"/>
+<coverage generated="1781089164521" clover="3.2.0">
+  <project timestamp="1781089164521" name="All files">
+    <metrics statements="104" coveredstatements="102" conditionals="24" coveredconditionals="24" methods="15" coveredmethods="14" elements="143" coveredelements="140" complexity="0" loc="104" ncloc="104" packages="3" files="5" classes="5"/>
     <package name="routes">
-      <metrics statements="56" coveredstatements="56" conditionals="17" coveredconditionals="17" methods="7" coveredmethods="7"/>
+      <metrics statements="62" coveredstatements="62" conditionals="17" coveredconditionals="17" methods="8" coveredmethods="8"/>
       <file name="events.ts" path="D:\Proyectos\Clay\clay-events-system-JLD\backend\src\routes\events.ts">
-        <metrics statements="32" coveredstatements="32" conditionals="11" coveredconditionals="11" methods="2" coveredmethods="2"/>
+        <metrics statements="38" coveredstatements="38" conditionals="11" coveredconditionals="11" methods="3" coveredmethods="3"/>
         <line num="1" count="1" type="stmt"/>
         <line num="3" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
@@ -38,6 +38,12 @@
         <line num="56" count="1" type="stmt"/>
         <line num="57" count="1" type="stmt"/>
         <line num="61" count="1" type="stmt"/>
+        <line num="62" count="3" type="stmt"/>
+        <line num="63" count="3" type="stmt"/>
+        <line num="67" count="1" type="stmt"/>
+        <line num="69" count="2" type="stmt"/>
+        <line num="70" count="2" type="stmt"/>
+        <line num="74" count="1" type="stmt"/>
       </file>
       <file name="health.ts" path="D:\Proyectos\Clay\clay-events-system-JLD\backend\src\routes\health.ts">
         <metrics statements="11" coveredstatements="11" conditionals="6" coveredconditionals="6" methods="3" coveredmethods="3"/>
