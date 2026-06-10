@@ -1,4 +1,5 @@
 import { Server } from 'http';
+import cors from 'cors';
 import express from 'express';
 import { config } from './config';
 import { connectMongo, closeMongo } from './infrastructure/mongo';
@@ -8,6 +9,7 @@ import eventsRouter from './routes/events';
 import metricsRouter from './routes/metrics';
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use(healthRouter);
 app.use(eventsRouter);

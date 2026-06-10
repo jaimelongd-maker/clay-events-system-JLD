@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { Filter } from 'mongodb';
+import { Filter, WithId } from 'mongodb';
 import { EventSchema, EventQuerySchema, Event } from '../schemas/event.schema';
 import { getRedisClient } from '../infrastructure/redis';
 import { getDb } from '../infrastructure/mongo';
@@ -44,7 +44,7 @@ router.get('/events', async (req: Request, res: Response): Promise<void> => {
       };
     }
 
-    const events = await getDb()
+    const events: WithId<Event>[] = await getDb()
       .collection<Event>('events')
       .find(filter)
       .sort({ timestamp: -1 })
@@ -55,6 +55,19 @@ router.get('/events', async (req: Request, res: Response): Promise<void> => {
   } catch (err) {
     console.error('Failed to query events:', (err as Error).message);
     res.status(500).json({ error: 'Failed to query events' });
+  }
+});
+
+router.delete('/events', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    await Promise.all([
+      getDb().collection('events').deleteMany({}),
+      getRedisClient().del('events:queue'),
+    ]);
+    res.status(200).json({ deleted: true });
+  } catch (err) {
+    console.error('Failed to clear events:', (err as Error).message);
+    res.status(500).json({ error: 'Failed to clear events' });
   }
 });
 

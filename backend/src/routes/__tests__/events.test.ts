@@ -2,7 +2,9 @@ import express from 'express';
 import request from 'supertest';
 
 const lpushMock = jest.fn();
+const delMock = jest.fn();
 const toArrayMock = jest.fn();
+const deleteManyMock = jest.fn();
 const cursorMock = {
   sort: jest.fn().mockReturnThis(),
   limit: jest.fn().mockReturnThis(),
@@ -11,10 +13,10 @@ const cursorMock = {
 const findMock = jest.fn().mockReturnValue(cursorMock);
 
 jest.mock('../../infrastructure/redis', () => ({
-  getRedisClient: () => ({ lpush: lpushMock }),
+  getRedisClient: () => ({ lpush: lpushMock, del: delMock }),
 }));
 jest.mock('../../infrastructure/mongo', () => ({
-  getDb: () => ({ collection: () => ({ find: findMock }) }),
+  getDb: () => ({ collection: () => ({ find: findMock, deleteMany: deleteManyMock }) }),
 }));
 
 import eventsRouter from '../events';
@@ -185,5 +187,31 @@ describe('GET /events', () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('Failed to query events');
+  });
+});
+
+describe('DELETE /events', () => {
+  afterEach(() => jest.clearAllMocks());
+
+  it('returns 200 and clears MongoDB and Redis', async () => {
+    deleteManyMock.mockResolvedValue({ deletedCount: 50 });
+    delMock.mockResolvedValue(1);
+
+    const res = await request(app).delete('/events');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ deleted: true });
+    expect(deleteManyMock).toHaveBeenCalledWith({});
+    expect(delMock).toHaveBeenCalledWith('events:queue');
+  });
+
+  it('returns 500 when MongoDB throws', async () => {
+    deleteManyMock.mockRejectedValueOnce(new Error('Mongo unavailable'));
+    delMock.mockResolvedValue(1);
+
+    const res = await request(app).delete('/events');
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to clear events');
   });
 });
