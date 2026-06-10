@@ -46,6 +46,7 @@ services:
       MONGO_URI: mongodb://mongodb:27017/clay_events
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      FRONTEND_URL: http://localhost:3002
     depends_on:
       mongodb:
         condition: service_healthy
@@ -53,8 +54,6 @@ services:
         condition: service_healthy
     networks:
       - clay_network
-    volumes:
-      - ./backend/src:/app/src
 
   worker:
     build:
@@ -74,8 +73,20 @@ services:
         condition: service_healthy
     networks:
       - clay_network
-    volumes:
-      - ./backend/src:/app/src
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: http://localhost:3001
+    container_name: clay_frontend
+    ports:
+      - '3002:80'
+    depends_on:
+      - backend
+    networks:
+      - clay_network
 
 networks:
   clay_network:

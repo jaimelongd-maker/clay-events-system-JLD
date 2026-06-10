@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { EventItem, Metrics } from './types';
 import { fetchEvents, fetchMetrics } from './api';
 import EventsTable from './components/EventsTable';
@@ -6,6 +6,7 @@ import EventsChart from './components/EventsChart';
 import ChartFilter from './components/ChartFilter';
 import FilterSelector from './components/FilterSelector';
 import EventForm from './components/EventForm';
+import TopUsers from './components/TopUsers';
 import './App.css';
 
 const POLL_INTERVAL_MS = 5000;
@@ -24,6 +25,11 @@ function App() {
   const [selectedTypeForTable, setSelectedTypeForTable] = useState<string>('');
 
   const [error, setError] = useState<string | null>(null);
+
+  // Registro de tipos que el usuario ya ha visto al menos una vez. Solo los tipos
+  // que aparecen por PRIMERA vez se auto-marcan; los que el usuario destildó no se
+  // vuelven a añadir aunque sigan llegando eventos de ese tipo en el polling.
+  const knownTypesRef = useRef<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
 
   const triggerRefresh = () => setRefreshKey(k => k + 1);
@@ -49,14 +55,16 @@ function App() {
     return () => clearInterval(interval);
   }, [selectedTypeForTable, refreshKey]);
 
-  // Cuando llegan tipos nuevos de la BD (ej: primer evento de tipo "scroll"),
-  // los añade automáticamente como checked. Usa el updater funcional para leer
-  // el prev sin declararlo como dependencia (evita bucle infinito).
+  // Auto-marca solo los tipos que aparecen por primera vez en la BD.
+  // knownTypesRef actúa como memoria persistente entre renders sin provocar re-renders.
   useEffect(() => {
-    setSelectedTypesForChart(prev => {
-      const newTypes = Object.keys(metrics.eventsByType).filter(t => !prev.includes(t));
-      return newTypes.length > 0 ? [...prev, ...newTypes] : prev;
-    });
+    const brandNew = Object.keys(metrics.eventsByType).filter(
+      t => !knownTypesRef.current.has(t)
+    );
+    if (brandNew.length > 0) {
+      brandNew.forEach(t => knownTypesRef.current.add(t));
+      setSelectedTypesForChart(prev => [...prev, ...brandNew]);
+    }
   }, [metrics.eventsByType]);
 
   const allEventTypes = Object.keys(metrics.eventsByType).sort();
@@ -98,10 +106,16 @@ function App() {
       </section>
 
       <section className="section">
+        <h2>Top usuarios</h2>
+        <TopUsers users={metrics.topUsers} />
+      </section>
+
+      <section className="section">
         <h2>Últimos eventos <span className="subtitle">(actualiza cada 5s)</span></h2>
         <div className="table-controls">
-          <label>Filtrar por tipo:</label>
+          <label htmlFor="table-filter">Filtrar por tipo:</label>
           <FilterSelector
+            id="table-filter"
             types={allEventTypes}
             selected={selectedTypeForTable}
             onChange={setSelectedTypeForTable}

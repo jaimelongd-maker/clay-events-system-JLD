@@ -124,15 +124,16 @@ const EventForm: FC<Props> = ({ onEventAdded }) => {
             <h3>Agregar evento personalizado</h3>
 
             <div className="form-group">
-              <label>Event Type</label>
-              <select value={formType} onChange={e => setFormType(e.target.value)}>
+              <label htmlFor="form-event-type">Event Type</label>
+              <select id="form-event-type" value={formType} onChange={e => setFormType(e.target.value)}>
                 {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
 
             <div className="form-group">
-              <label>User ID</label>
+              <label htmlFor="form-user-id">User ID</label>
               <input
+                id="form-user-id"
                 type="text"
                 value={formUserId}
                 onChange={e => setFormUserId(e.target.value)}

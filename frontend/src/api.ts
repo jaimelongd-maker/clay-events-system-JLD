@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { EventItem, Metrics } from './types';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 export async function fetchEvents(eventType?: string): Promise<EventItem[]> {
   const params = new URLSearchParams();

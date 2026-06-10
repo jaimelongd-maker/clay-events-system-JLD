@@ -27,8 +27,8 @@ const EventsChart: FC<Props> = ({ data }) => {
         <Tooltip />
         {/* Cell asigna el color de cada barra individualmente */}
         <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-          {data.map((entry, i) => (
-            <Cell key={i} fill={entry.color} />
+          {data.map((entry) => (
+            <Cell key={entry.name} fill={entry.color} />
           ))}
         </Bar>
       </BarChart>
