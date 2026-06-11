@@ -83,7 +83,7 @@
 
 **Qué acepté:** Polling cada 5 segundos. Para el volumen de la demo, la latencia de 5s no impacta. WebSocket agrega complejidad de reconexión que no necesito.
 
-**Qué modifiqué o rechacé:** La sugerencia inicial de usar Socket.io. Es innececesaria para una demo simple.
+**Qué modifiqué o rechacé:** La sugerencia inicial de usar Socket.io. Es innecesaria para una demo simple.
 
 ### Prompt 6: MongoDB driver nativo vs Mongoose
 
@@ -161,6 +161,7 @@ Propuse varios gráficos a Claude: UserTypeDistribution (stacked bar de tipos ×
 UserActivityHeatmap era más compleja de hacer (24 horas × N usuarios con MongoDB aggregation), pero respondía una pregunta real que ningún otro gráfico contestaba: a qué hora cada usuario está más activo. Eso valía la pena.
 
 Lo importante fue no agregar gráficos porque "sí", sino preguntar si realmente sumaban o si era ruido. Claude ayudó a estructurar la evaluación, pero la decisión fue mía: ¿vale la complejidad por el valor que aporta?
+
 ---
 
 ## Caso donde rechacé a la IA
@@ -189,7 +190,7 @@ Aprendizaje: las decisiones de presentación en la UI no deben contaminar el dis
 
 Consideré alternativas cuando empecé.
 
-Los agentes automatizan tareas, hubieran generado código más rápido. Pero para este desafío específico, donde el criterio técnico era lo central, hubiera perdido visibilidad en decisiones críticas. En caso de un timeline más apretado hubiese generado agentes para componentes basicos.
+Los agentes automatizan tareas, hubieran generado código más rápido. Pero para este desafío específico, donde el criterio técnico era lo central, hubiera perdido visibilidad en decisiones críticas. En caso de un timeline más apretado hubiese generado agentes para componentes básicos.
 
 Los plugins aceleran cosas. Pero agregaban capas de abstracción. Necesitaba entender cada decisión. Un agente genera, yo quería no solo generar sino aprender de cada herramienta utilizada. 
 

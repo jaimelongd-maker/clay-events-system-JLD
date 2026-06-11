@@ -244,7 +244,7 @@ Cobertura: `coverage/lcov-report/index.html`
 
 **MongoDB driver nativo** en lugar de Mongoose — control total, menos abstracción, mejor para este volumen.
 
-**Zod en lugar de otra librería** — inferencia de tipos TypeScript, validación en runtime, esquemas compoables.
+**Zod en lugar de otra librería** — inferencia de tipos TypeScript, validación en runtime, esquemas componibles.
 
 **Agregación en MongoDB** — los gráficos no traen eventos crudos; el backend devuelve datos ya agrupados. Más eficiente (y más correcto arquitectónicamente).
 
@@ -278,7 +278,7 @@ Para detalles sobre cada decisión y aprendizajes, ver `AI_WORKFLOW.md`.
 | **Functions** | 100% (28/28) | 87.83% | **93.9%** |
 | **Lines** | 100% (166/166) | 93.1% | **96.5%** |
 
-*Nota sobre cobertura frontend: el 91.7% refleja cobertura real sobre componentes. Las 3 líneas sin cubrir (EventForm 46, 67 y UserTypeDistribution 39) son guardias defensivas contra estados imposibles en uso real, no código paths críticos. Tres archivos generados automáticamente por Create React App no están testeados:
+Nota sobre cobertura frontend: el 91.7% refleja cobertura real sobre componentes. Las 3 líneas sin cubrir (EventForm 46, 67 y UserTypeDistribution 39) son guardias defensivas contra estados imposibles en uso real, no código paths críticos. Tres archivos generados automáticamente por Create React App no están testeados:
 
 - `index.tsx` — entry point que monta React. Es infraestructura de arranque, no lógica de negocio.
 - `reportWebVitals.ts` — utilidad default de CRA para medir performance. No es código nuestro.
@@ -298,7 +298,7 @@ Para detalles sobre cada decisión y aprendizajes, ver `AI_WORKFLOW.md`.
 ## Auditoría técnica y mejoras
 
 **Post-implementación,** tras alcanzar 142 tests pasando con 100% cobertura en backend, 
-realicé auditoría de mejores prácticas. Identificué 5 áreas menores (no funcionales, 
+realicé auditoría de mejores prácticas. Identifiqué 5 áreas menores (no funcionales, 
 pero mejorables) y las corregí antes de entregar:
 
 | Área | Problema | Solución |
@@ -331,8 +331,6 @@ Protege contra: MIME sniffing, clickjacking, XSS, man-in-the-middle.
 Protegido automáticamente por Zod. Todo input se valida en tipado estricto antes de llegar a MongoDB.
 
 Detalles técnicos en `AI_WORKFLOW.md` (sección "Auditoría de seguridad").
----
-
 ---
 
 ## Preguntas de screening
@@ -369,7 +367,7 @@ Lo más inmediato es el error rate en POST /events. Si Redis está caído, el en
 
 Segundo, si la queue de Redis crece sin procesarse. Un "LLEN events:queue" te dice el tamaño. Si sube, significa el worker está caído o muy lento.
 
-Tercero, logs del worker con errores de retry agotado. Eso significa eventos se están perdiendo y es crítico.
+Tercero, logs del worker con errores de retry agotado. Eso significa que se están perdiendo eventos y es crítico.
 
 Cuarto, latencia entre POST y GET. Aunque hay que considerar que el sistema es intencionalmente asíncrono, POST devuelve 202 sin garantía de cuándo aparece en GET. Por lo que hay que generar un eventId para correlacionar la request.
 
@@ -383,5 +381,5 @@ En GET /metrics pasó algo diferente. Generó tests para casos extremos (total d
 
 Finalmente, cuando agregué los límites de caracteres para metadata, faltaban tests de casos límites: string exactamente en el límite, un carácter más allá, campos vacíos, valores null. Eso lo encontré en la auditoría de cobertura.
 
-Lo que vi es que Claude genera bien los casos obvios, pero no piensa en qué puede salir mal en casos límites y también puede generar problemas en sus tests sin darse cuenta como el caso de GET /metrics
+Lo que vi es que Claude genera bien los casos obvios, pero no piensa en qué puede salir mal en casos límites y también puede generar problemas en sus tests sin darse cuenta, como el caso de GET /metrics.
 
