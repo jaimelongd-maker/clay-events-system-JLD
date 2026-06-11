@@ -1,9 +1,10 @@
 import { FC, useState } from 'react';
-import { postEvent, deleteAllEvents } from '../api';
+import { postEvent, deleteAllEvents, isRateLimitError } from '../api';
 import seedEvents from '../seed-events.json';
 import { EventItem } from '../types';
 
 const EVENT_TYPES = ['click', 'view', 'scroll', 'submit', 'navigate'];
+const FEEDBACK_TIMEOUT_MS = 3000;
 
 const randomUserId = () => `user-${Math.floor(Math.random() * 10) + 1}`;
 
@@ -29,13 +30,23 @@ const EventForm: FC<Props> = ({ onEventAdded }) => {
 
   // Estado del botón de seed: idle | loading | done | error
   const [seedStatus, setSeedStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const showActionError = (msg: string) => {
+    setActionError(msg);
+    setTimeout(() => setActionError(null), FEEDBACK_TIMEOUT_MS);
+  };
 
   const handleQuickAdd = async (eventType: string) => {
     try {
       await postEvent(buildEvent(eventType, randomUserId()));
       onEventAdded();
-    } catch {
-      alert(`Error al agregar evento "${eventType}"`);
+    } catch (err) {
+      showActionError(
+        isRateLimitError(err)
+          ? 'Demasiadas peticiones, espera un momento antes de continuar'
+          : `Error al agregar evento "${eventType}"`
+      );
     }
   };
 
@@ -51,8 +62,12 @@ const EventForm: FC<Props> = ({ onEventAdded }) => {
       setIsOpen(false);
       setFormUserId('');
       setFormError('');
-    } catch {
-      alert('Error al agregar el evento');
+    } catch (err) {
+      setFormError(
+        isRateLimitError(err)
+          ? 'Demasiadas peticiones, espera un momento antes de continuar'
+          : 'Error al agregar el evento'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -69,7 +84,7 @@ const EventForm: FC<Props> = ({ onEventAdded }) => {
       await deleteAllEvents();
       onEventAdded();
     } catch {
-      alert('Error al limpiar los datos');
+      showActionError('Error al limpiar los datos');
     }
   };
 
@@ -83,10 +98,15 @@ const EventForm: FC<Props> = ({ onEventAdded }) => {
       onEventAdded();
       setSeedStatus('done');
       // Vuelve a idle tras 3s para que el mensaje no quede pegado
-      setTimeout(() => setSeedStatus('idle'), 3000);
-    } catch {
-      setSeedStatus('error');
-      setTimeout(() => setSeedStatus('idle'), 3000);
+      setTimeout(() => setSeedStatus('idle'), FEEDBACK_TIMEOUT_MS);
+    } catch (err) {
+      if (isRateLimitError(err)) {
+        setSeedStatus('idle');
+        showActionError('Demasiadas peticiones al cargar los datos de prueba, espera un momento');
+      } else {
+        setSeedStatus('error');
+        setTimeout(() => setSeedStatus('idle'), FEEDBACK_TIMEOUT_MS);
+      }
     }
   };
 
@@ -117,6 +137,7 @@ const EventForm: FC<Props> = ({ onEventAdded }) => {
           Limpiar todos los datos
         </button>
       </div>
+      {actionError && <p className="form-error">{actionError}</p>}
 
       {isOpen && (
         <div className="modal-overlay" onClick={handleClose}>

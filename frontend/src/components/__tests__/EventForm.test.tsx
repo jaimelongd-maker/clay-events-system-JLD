@@ -8,6 +8,7 @@ import { postEvent, deleteAllEvents } from '../../api';
 jest.mock('../../api', () => ({
   postEvent:        jest.fn(),
   deleteAllEvents:  jest.fn(),
+  isRateLimitError: jest.fn().mockReturnValue(false),
 }));
 
 // Reduce the seed to 3 events so assertions are simple and runs are fast

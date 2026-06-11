@@ -12,6 +12,7 @@ import UserTypeDistribution from './components/UserTypeDistribution';
 import './App.css';
 
 const POLL_INTERVAL_MS = 5000;
+const TOP_USERS_LIMIT = 3;
 
 // Paleta fija; el color de cada tipo se asigna por orden de aparición y no cambia
 const CHART_COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
@@ -139,7 +140,7 @@ function App() {
       </section>
 
       <section className="section">
-        <h2>Top {usersDistributionData.length > 0 ? usersDistributionData.length : 5} usuarios — Distribución por tipo</h2>
+        <h2>Top {usersDistributionData.length || TOP_USERS_LIMIT} usuarios — Distribución por tipo</h2>
         <UserTypeDistribution
           data={usersDistributionData}
           colorMap={colorMap}

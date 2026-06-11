@@ -1,12 +1,23 @@
 import { Router, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { Filter, WithId } from 'mongodb';
 import { EventSchema, EventQuerySchema, Event } from '../schemas/event.schema';
 import { getRedisClient } from '../infrastructure/redis';
 import { getDb } from '../infrastructure/mongo';
+import { REDIS_KEYS } from '../constants';
 
 const router = Router();
 
-router.post('/events', async (req: Request, res: Response): Promise<void> => {
+const DEFAULT_EVENT_LIMIT = 20;
+const MAX_EVENT_LIMIT = 1000;
+
+const rateLimitMessage = { error: 'Demasiadas peticiones, intenta de nuevo más tarde' };
+
+const postEventsLimiter   = rateLimit({ windowMs: 60_000, limit: 60,  standardHeaders: 'draft-7', legacyHeaders: false, message: rateLimitMessage });
+const deleteEventsLimiter = rateLimit({ windowMs: 60_000, limit: 5,   standardHeaders: 'draft-7', legacyHeaders: false, message: rateLimitMessage });
+const getEventsLimiter    = rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: 'draft-7', legacyHeaders: false, message: rateLimitMessage });
+
+router.post('/events', postEventsLimiter, async (req: Request, res: Response): Promise<void> => {
   const result = EventSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -15,7 +26,7 @@ router.post('/events', async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    await getRedisClient().lpush('events:queue', JSON.stringify(result.data));
+    await getRedisClient().lpush(REDIS_KEYS.EVENTS_QUEUE, JSON.stringify(result.data));
     res.status(202).json({ queued: true });
   } catch (err) {
     console.error('Failed to enqueue event:', (err as Error).message);
@@ -23,7 +34,7 @@ router.post('/events', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-router.get('/events', async (req: Request, res: Response): Promise<void> => {
+router.get('/events', getEventsLimiter, async (req: Request, res: Response): Promise<void> => {
   const result = EventQuerySchema.safeParse(req.query);
 
   if (!result.success) {
@@ -33,7 +44,7 @@ router.get('/events', async (req: Request, res: Response): Promise<void> => {
 
   try {
     const { eventType, userId, fromTimestamp, toTimestamp, limit: rawLimit } = result.data;
-    const limit = Math.min(rawLimit ?? 20, 1000);
+    const limit = Math.min(rawLimit ?? DEFAULT_EVENT_LIMIT, MAX_EVENT_LIMIT);
     const filter: Filter<Event> = {};
 
     if (eventType) filter.eventType = eventType;
@@ -59,11 +70,11 @@ router.get('/events', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-router.delete('/events', async (_req: Request, res: Response): Promise<void> => {
+router.delete('/events', deleteEventsLimiter, async (_req: Request, res: Response): Promise<void> => {
   try {
     await Promise.all([
       getDb().collection('events').deleteMany({}),
-      getRedisClient().del('events:queue'),
+      getRedisClient().del(REDIS_KEYS.EVENTS_QUEUE),
     ]);
     res.status(200).json({ deleted: true });
   } catch (err) {

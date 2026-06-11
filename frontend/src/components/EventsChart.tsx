@@ -20,11 +20,11 @@ const EventsChart: FC<Props> = ({ data }) => {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+      <BarChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis allowDecimals={false} />
-        <Tooltip />
+        <XAxis dataKey="name" label={{ value: 'Tipo de evento', position: 'insideBottom', offset: -10 }} />
+        <YAxis allowDecimals={false} label={{ value: 'Eventos', angle: -90, position: 'insideLeft', offset: 10 }} />
+        <Tooltip formatter={(value) => [value, 'Eventos']} />
         {/* Cell asigna el color de cada barra individualmente */}
         <Bar dataKey="value" radius={[4, 4, 0, 0]}>
           {data.map((entry) => (

@@ -1,13 +1,23 @@
 import { Router, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { getDb } from '../infrastructure/mongo';
 
 const router = Router();
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const TOP_USERS_LIMIT = 3;
+
+const metricsReadLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Demasiadas peticiones, intenta de nuevo más tarde' },
+});
 
 // ── GET /metrics ──────────────────────────────────────────────────────────────
 
-router.get('/metrics', async (_req: Request, res: Response): Promise<void> => {
+router.get('/metrics', metricsReadLimiter, async (_req: Request, res: Response): Promise<void> => {
   try {
     const col = getDb().collection('events');
 
@@ -21,7 +31,7 @@ router.get('/metrics', async (_req: Request, res: Response): Promise<void> => {
       col.aggregate<{ userId: string; count: number }>([
         { $group: { _id: '$userId', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $limit: 3 },
+        { $limit: TOP_USERS_LIMIT },
         { $project: { _id: 0, userId: '$_id', count: 1 } },
       ]).toArray(),
     ]);
@@ -49,7 +59,7 @@ const RANGE_MS: Record<'24h' | '7d' | '30d', number> = {
   '30d': 30 * MS_PER_DAY,
 };
 
-router.get('/metrics/timeline', async (req: Request, res: Response): Promise<void> => {
+router.get('/metrics/timeline', metricsReadLimiter, async (req: Request, res: Response): Promise<void> => {
   const result = TimelineQuerySchema.safeParse(req.query);
   if (!result.success) {
     res.status(400).json({ errors: result.error.flatten() });
@@ -100,7 +110,7 @@ const UsersActivityQuerySchema = z.object({
 
 const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-router.get('/metrics/users-activity', async (req: Request, res: Response): Promise<void> => {
+router.get('/metrics/users-activity', metricsReadLimiter, async (req: Request, res: Response): Promise<void> => {
   const result = UsersActivityQuerySchema.safeParse(req.query);
   if (!result.success) {
     res.status(400).json({ errors: result.error.flatten() });
@@ -165,7 +175,7 @@ router.get('/metrics/users-activity', async (req: Request, res: Response): Promi
 
 // ── GET /metrics/users-distribution ──────────────────────────────────────────
 
-router.get('/metrics/users-distribution', async (_req: Request, res: Response): Promise<void> => {
+router.get('/metrics/users-distribution', metricsReadLimiter, async (_req: Request, res: Response): Promise<void> => {
   try {
     const col = getDb().collection('events');
 

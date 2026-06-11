@@ -1,8 +1,7 @@
 import { getDb } from '../infrastructure/mongo';
 import { getRedisClient } from '../infrastructure/redis';
 import { EventSchema, Event } from '../schemas/event.schema';
-
-const QUEUE_KEY = 'events:queue';
+import { REDIS_KEYS } from '../constants';
 
 export async function createIndexes(): Promise<void> {
   const col = getDb().collection('events');
@@ -49,11 +48,11 @@ export async function saveWithRetry(event: Event, retries = 3): Promise<void> {
 // isRunning se inyecta para poder parar el loop desde worker.ts (y testearlo)
 export async function consume(isRunning: () => boolean): Promise<void> {
   const redis = getRedisClient();
-  console.log(`Worker consuming from ${QUEUE_KEY}`);
+  console.log(`Worker consuming from ${REDIS_KEYS.EVENTS_QUEUE}`);
 
   while (isRunning()) {
     try {
-      const entry = await redis.brpop(QUEUE_KEY, 5); // bloquea 5s; null = timeout, reintenta
+      const entry = await redis.brpop(REDIS_KEYS.EVENTS_QUEUE, 5); // bloquea 5s; null = timeout, reintenta
       if (!entry) continue;
       const [, payload] = entry;
       await processEvent(payload);
