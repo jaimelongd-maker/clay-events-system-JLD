@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import EventForm from '../EventForm';
-import { postEvent, deleteAllEvents } from '../../api';
+import { postEvent, deleteAllEvents, isRateLimitError } from '../../api';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -22,8 +22,9 @@ jest.mock('../../seed-events.json', () => [
 window.alert   = jest.fn();
 window.confirm = jest.fn();
 
-const mockedPostEvent       = jest.mocked(postEvent);
-const mockedDeleteAllEvents = jest.mocked(deleteAllEvents);
+const mockedPostEvent        = jest.mocked(postEvent);
+const mockedDeleteAllEvents  = jest.mocked(deleteAllEvents);
+const mockedIsRateLimitError = jest.mocked(isRateLimitError);
 
 const renderForm = () => {
   const onEventAdded = jest.fn();
@@ -38,7 +39,10 @@ const openModal = () =>
 
 describe('Quick add buttons', () => {
   beforeEach(() => mockedPostEvent.mockResolvedValue(undefined));
-  afterEach(() => jest.clearAllMocks());
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
+  });
 
   it('calls postEvent once with eventType "click" and fires onEventAdded', async () => {
     const { onEventAdded } = renderForm();
@@ -50,6 +54,31 @@ describe('Quick add buttons', () => {
       expect.objectContaining({ eventType: 'click' })
     );
     expect(onEventAdded).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows action error when postEvent rejects on quick add', async () => {
+    jest.useFakeTimers();
+    mockedPostEvent.mockRejectedValueOnce(new Error('network error'));
+    renderForm();
+
+    userEvent.click(screen.getByText('+ Click'));
+
+    await waitFor(() =>
+      expect(screen.getByText('Error al agregar evento "click"')).toBeInTheDocument()
+    );
+  });
+
+  it('auto-clears the action error after the feedback timeout', async () => {
+    jest.useFakeTimers();
+    mockedPostEvent.mockRejectedValueOnce(new Error('network error'));
+    renderForm();
+
+    userEvent.click(screen.getByText('+ Click'));
+    await waitFor(() => screen.getByText('Error al agregar evento "click"'));
+
+    await act(async () => { jest.advanceTimersByTime(3000); });
+
+    expect(screen.queryByText('Error al agregar evento "click"')).not.toBeInTheDocument();
   });
 });
 
@@ -96,6 +125,37 @@ describe('Custom event form (modal)', () => {
       expect.objectContaining({ eventType: 'click', userId: 'user-5' })
     );
     expect(onEventAdded).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows error in modal when postEvent rejects on submit', async () => {
+    mockedPostEvent.mockRejectedValueOnce(new Error('server error'));
+    renderForm();
+    openModal();
+
+    userEvent.type(screen.getByPlaceholderText('ej: user-42'), 'user-5');
+    userEvent.click(screen.getByRole('button', { name: 'Agregar' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Error al agregar el evento')).toBeInTheDocument()
+    );
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Agregar evento personalizado' })
+    ).toBeInTheDocument();
+  });
+
+  it('submits the selected event type when changed in the modal', async () => {
+    renderForm();
+    openModal();
+
+    userEvent.selectOptions(screen.getByLabelText('Event Type'), 'scroll');
+    userEvent.type(screen.getByPlaceholderText('ej: user-42'), 'user-5');
+    userEvent.click(screen.getByRole('button', { name: 'Agregar' }));
+
+    await waitFor(() =>
+      expect(mockedPostEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ eventType: 'scroll', userId: 'user-5' })
+      )
+    );
   });
 
   it('closes the modal and clears the validation error when Cancelar is clicked', async () => {
@@ -160,6 +220,21 @@ describe('Seed load', () => {
       expect(screen.getByText('✗ Error al cargar eventos')).toBeInTheDocument()
     );
   });
+
+  it('shows rate-limit error and resets to idle when seed is rate-limited', async () => {
+    mockedIsRateLimitError.mockReturnValueOnce(true);
+    mockedPostEvent.mockRejectedValueOnce(new Error('429'));
+    renderForm();
+
+    userEvent.click(screen.getByText(/Cargar datos de prueba/i));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Demasiadas peticiones al cargar los datos de prueba, espera un momento')
+      ).toBeInTheDocument()
+    );
+    expect(screen.queryByText('✗ Error al cargar eventos')).not.toBeInTheDocument();
+  });
 });
 
 // ── Clear all data ────────────────────────────────────────────────────────────
@@ -176,6 +251,18 @@ describe('Clear all data', () => {
 
     await waitFor(() => expect(mockedDeleteAllEvents).toHaveBeenCalledTimes(1));
     expect(onEventAdded).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows error when deleteAllEvents rejects', async () => {
+    (window.confirm as jest.Mock).mockReturnValue(true);
+    mockedDeleteAllEvents.mockRejectedValueOnce(new Error('server error'));
+    renderForm();
+
+    userEvent.click(screen.getByText('Limpiar todos los datos'));
+
+    await waitFor(() =>
+      expect(screen.getByText('Error al limpiar los datos')).toBeInTheDocument()
+    );
   });
 
   it('does not call deleteAllEvents when the user cancels the confirm dialog', () => {

@@ -200,6 +200,6 @@ Nota: Usé la extensión de Claude en VS Code durante el desarrollo en modo conv
 ## Números finales
 
 - Backend: 68 tests, 100% cobertura
-- Frontend: 74 tests, 85.49% cobertura
-- Total: 142 tests
+- Frontend: 84 tests, 91.7% statements / 84.84% branches
+- Total: 152 tests
 - 7 endpoints, 4 gráficos, 3 filtros independientes

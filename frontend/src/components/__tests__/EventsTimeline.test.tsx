@@ -14,7 +14,18 @@ jest.mock('recharts', () => ({
   XAxis:         () => null,
   YAxis:         () => null,
   CartesianGrid: () => null,
-  Tooltip:       () => null,
+  Tooltip: ({ formatter, labelFormatter }: any) => {
+    const formatted = formatter?.(5) as [unknown, string] | undefined;
+    const label = labelFormatter?.('10:00') as string | undefined;
+    return (
+      <div
+        data-testid="tooltip"
+        data-label={label ?? ''}
+        data-value={formatted ? String(formatted[0]) : ''}
+        data-name={formatted ? formatted[1] : ''}
+      />
+    );
+  },
 }));
 
 const sampleData = [
@@ -85,5 +96,22 @@ describe('EventsTimeline', () => {
 
     const chart = screen.getByTestId('line-chart');
     expect(JSON.parse(chart.getAttribute('data-points') ?? '[]')).toEqual(sampleData);
+  });
+
+  it('formats tooltip count with "Eventos" as series name', () => {
+    render(<EventsTimeline {...defaultProps} />);
+    const tooltip = screen.getByTestId('tooltip');
+    expect(tooltip).toHaveAttribute('data-value', '5');
+    expect(tooltip).toHaveAttribute('data-name', 'Eventos');
+  });
+
+  it('shows "Hora:" prefix in tooltip label when range is "24h"', () => {
+    render(<EventsTimeline {...defaultProps} range="24h" />);
+    expect(screen.getByTestId('tooltip')).toHaveAttribute('data-label', 'Hora: 10:00');
+  });
+
+  it('shows "Día:" prefix in tooltip label when range is not "24h"', () => {
+    render(<EventsTimeline {...defaultProps} range="7d" />);
+    expect(screen.getByTestId('tooltip')).toHaveAttribute('data-label', 'Día: 10:00');
   });
 });

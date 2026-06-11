@@ -57,9 +57,12 @@ const mockedFetchTimeline           = jest.mocked(fetchTimeline);
 const mockedFetchUsersDistribution  = jest.mocked(fetchUsersDistribution);
 
 // Wait for the full initial load to propagate to the DOM.
-// Checking a DOM element (not just a mock call) ensures all setState calls settled.
-const waitForInitialLoad = () =>
-  waitFor(() => screen.getByText(/Total: \d+ eventos/i));
+// The second act() flushes the cascading auto-mark effect (setSelectedTypesForChart)
+// that fires after metrics updates, so no state update escapes act().
+const waitForInitialLoad = async () => {
+  await waitFor(() => screen.getByText(/Total: \d+ eventos/i));
+  await act(async () => {});
+};
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -75,16 +78,16 @@ describe('App – render', () => {
 
   it('renders the dashboard title', async () => {
     render(<App />);
+    await waitForInitialLoad();
 
     expect(screen.getByText('Clay Events Dashboard')).toBeInTheDocument();
   });
 
   it('shows total event count after data loads', async () => {
     render(<App />);
+    await waitForInitialLoad();
 
-    await waitFor(() =>
-      expect(screen.getByText('Total: 3 eventos')).toBeInTheDocument()
-    );
+    expect(screen.getByText('Total: 3 eventos')).toBeInTheDocument();
   });
 
   it('calls fetchEvents on mount', async () => {
@@ -103,8 +106,9 @@ describe('App – render', () => {
 
   it('renders event rows returned by the API', async () => {
     render(<App />);
+    await waitForInitialLoad();
 
-    await waitFor(() => expect(screen.getByText('click_button')).toBeInTheDocument());
+    expect(screen.getByText('click_button')).toBeInTheDocument();
   });
 });
 

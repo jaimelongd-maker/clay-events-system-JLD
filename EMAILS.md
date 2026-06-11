@@ -110,7 +110,7 @@ Se entregó un sistema completo de ingestión y visualización de eventos en Doc
 
 El frontend muestra un dashboard con gráfico de tipos de eventos, timeline configurable (24h/7d/30d), top 3 usuarios más activos, heatmap de actividad por hora, y una tabla filtrable de eventos con polling cada 5 segundos.
 
-En seguridad agregué rate limiting por endpoint (5–120 req/min según criticidad), headers defensivos con helmet, y validación de inputs con Zod en todos lados. Los tests quedaron en 142 totales: 68 backend con 100% cobertura, 74 frontend con 85.49%.
+En seguridad agregué rate limiting por endpoint (5–120 req/min según criticidad), headers defensivos con helmet, y validación de inputs con Zod en todos lados. Los tests quedaron en 152 totales: 68 backend con 100% cobertura, 84 frontend con 91.7% statements y 84.84% branches.
 
 Hay algunas cosas que dejaría para después. Primero, autenticación en DELETE /events — hoy cualquiera puede vaciar la base de datos, necesita un token o algo básico. Segundo, el rate limiter vive en memoria y se resetea si reinicia el proceso — con volumen real habría que ponerlo en Redis. Y tercero, la tabla tiene un límite de 1000 registros — con datos reales necesitaría cursor-based pagination.
 

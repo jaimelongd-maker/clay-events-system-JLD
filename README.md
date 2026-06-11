@@ -60,8 +60,8 @@ Sistema de ingesta y visualización de eventos. Recibe eventos vía HTTP, los pr
 ### Tests
 
 - **Backend:** 68 tests, **100% cobertura** en todas las dimensiones (statements, branches, functions, lines).
-- **Frontend:** 74 tests, 88.39% cobertura global (94%+ sobre componentes reales, boilerplate CRA no testeado).
-- **Total:** 142 tests pasando.
+- **Frontend:** 84 tests, **91.7% statements / 84.84% branches** (100% en 6 de 8 componentes, boilerplate CRA no testeado).
+- **Total:** 152 tests pasando.
 - Reportes: `npm test -- --coverage` genera HTML navegable en `coverage/lcov-report/index.html`.
 
 **Cobertura detallada:**
@@ -72,9 +72,10 @@ Backend:
 - `worker`: 100% (41/41 statements, 4/4 branches, 6/6 functions)
 
 Frontend:
-- `src/components`: 92.59% statements (100 sobre componentes reales)
-- `src`: 82.19% statements (boilerplate CRA: index.tsx, reportWebVitals.ts, types.ts)
-- Componentes individuales: 88–100% (mayoría al 100%)
+- `src/components`: 98.3% statements, 93.18% branches (100% en EventsTimeline, EventsChart, EventsTable, FilterSelector, TopUsers, ChartFilter)
+- `src`: 81.33% statements (boilerplate CRA: index.tsx, reportWebVitals.ts, types.ts sin cobertura)
+- Líneas sin cubrir: EventForm (46, 67), UserTypeDistribution (39) — ramas de edge case
+
 
 ---
 
@@ -271,13 +272,13 @@ Para detalles sobre cada decisión y aprendizajes, ver `AI_WORKFLOW.md`.
 
 | Métrica | Backend | Frontend | Combinado |
 |---|---|---|---|
-| **Tests** | 68  | 74  | **142 tests** |
-| **Statements** | 100% (177/177) | 85.49% | **92.7%** |
-| **Branches** | 100% (38/38) | 75.75% | **88.4%** |
-| **Functions** | 100% (28/28) | 79.72% | **89.9%** |
-| **Lines** | 100% (166/166) | 86.78% | **93.4%** |
+| **Tests** | 68  | 84  | **152 tests** |
+| **Statements** | 100% (177/177) | 91.7% | **95.8%** |
+| **Branches** | 100% (38/38) | 84.84% | **92.4%** |
+| **Functions** | 100% (28/28) | 87.83% | **93.9%** |
+| **Lines** | 100% (166/166) | 93.1% | **96.5%** |
 
-*Nota sobre cobertura frontend: el 85.49% no refleja la calidad real del código. Tres archivos generados automáticamente por Create React App bajan el porcentaje aunque no sean relevantes:
+*Nota sobre cobertura frontend: el 91.7% refleja cobertura real sobre componentes. Las 3 líneas sin cubrir (EventForm 46, 67 y UserTypeDistribution 39) son guardias defensivas contra estados imposibles en uso real, no código paths críticos. Tres archivos generados automáticamente por Create React App no están testeados:
 
 - `index.tsx` — entry point que monta React. Es infraestructura de arranque, no lógica de negocio.
 - `reportWebVitals.ts` — utilidad default de CRA para medir performance. No es código nuestro.

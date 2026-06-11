@@ -14,7 +14,16 @@ jest.mock('recharts', () => ({
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ formatter }: any) => {
+    const formatted = formatter?.(11) as [unknown, string] | undefined;
+    return (
+      <div
+        data-testid="tooltip"
+        data-value={formatted ? String(formatted[0]) : ''}
+        data-name={formatted ? formatted[1] : ''}
+      />
+    );
+  },
 }));
 
 const makeEntry = (name: string, value: number, color: string) => ({ name, value, color });
@@ -44,6 +53,14 @@ describe('EventsChart', () => {
     render(<EventsChart data={data} />);
 
     expect(screen.queryByText('Sin datos para mostrar')).not.toBeInTheDocument();
+  });
+
+  it('formats tooltip value with "Eventos" as series name', () => {
+    const data = [makeEntry('click', 11, '#4f46e5')];
+    render(<EventsChart data={data} />);
+    const tooltip = screen.getByTestId('tooltip');
+    expect(tooltip).toHaveAttribute('data-value', '11');
+    expect(tooltip).toHaveAttribute('data-name', 'Eventos');
   });
 
   it('renders one Cell per data entry with the correct fill color', () => {
