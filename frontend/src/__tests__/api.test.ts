@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { fetchEvents, fetchMetrics, postEvent, deleteAllEvents } from '../api';
+import { fetchEvents, fetchMetrics, postEvent, deleteAllEvents, fetchTimeline, fetchUsersDistribution } from '../api';
 import { EventItem, Metrics } from '../types';
 
 jest.mock('axios');
@@ -97,5 +97,51 @@ describe('deleteAllEvents', () => {
     await deleteAllEvents();
 
     expect(mockedDelete).toHaveBeenCalledWith(`${BASE}/events`);
+  });
+});
+
+describe('fetchTimeline', () => {
+  it('calls axios.get on /metrics/timeline with range param', async () => {
+    mockedGet.mockResolvedValue({ data: { data: [] } });
+
+    await fetchTimeline('7d');
+
+    expect(mockedGet).toHaveBeenCalledWith(`${BASE}/metrics/timeline?range=7d`);
+  });
+
+  it('calls axios.get with range=24h', async () => {
+    mockedGet.mockResolvedValue({ data: { data: [] } });
+
+    await fetchTimeline('24h');
+
+    expect(mockedGet).toHaveBeenCalledWith(`${BASE}/metrics/timeline?range=24h`);
+  });
+
+  it('returns res.data.data', async () => {
+    const mockData = [{ timeLabel: '10/06', count: 5 }];
+    mockedGet.mockResolvedValue({ data: { data: mockData } });
+
+    const result = await fetchTimeline('30d');
+
+    expect(result).toEqual(mockData);
+  });
+});
+
+describe('fetchUsersDistribution', () => {
+  it('calls axios.get on /metrics/users-distribution', async () => {
+    mockedGet.mockResolvedValue({ data: { data: [] } });
+
+    await fetchUsersDistribution();
+
+    expect(mockedGet).toHaveBeenCalledWith(`${BASE}/metrics/users-distribution`);
+  });
+
+  it('returns res.data.data', async () => {
+    const mockData = [{ userId: 'user-1', types: [{ type: 'click', count: 5 }] }];
+    mockedGet.mockResolvedValue({ data: { data: mockData } });
+
+    const result = await fetchUsersDistribution();
+
+    expect(result).toEqual(mockData);
   });
 });

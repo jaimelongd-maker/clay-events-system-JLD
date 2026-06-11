@@ -32,7 +32,8 @@ router.get('/events', async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const { eventType, userId, fromTimestamp, toTimestamp } = result.data;
+    const { eventType, userId, fromTimestamp, toTimestamp, limit: rawLimit } = result.data;
+    const limit = Math.min(rawLimit ?? 20, 1000);
     const filter: Filter<Event> = {};
 
     if (eventType) filter.eventType = eventType;
@@ -48,7 +49,7 @@ router.get('/events', async (req: Request, res: Response): Promise<void> => {
       .collection<Event>('events')
       .find(filter)
       .sort({ timestamp: -1 })
-      .limit(20)
+      .limit(limit)
       .toArray();
 
     res.status(200).json({ events });

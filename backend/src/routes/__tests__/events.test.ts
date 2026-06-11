@@ -89,6 +89,54 @@ describe('POST /events', () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('Failed to enqueue event');
   });
+
+  // ── Boundary tests ───────────────────────────────────────────────────────
+
+  it('rejects event with oversized metadata.page string (>1000 chars)', async () => {
+    const res = await request(app)
+      .post('/events')
+      .send({ ...validEvent, metadata: { ...validEvent.metadata, page: 'x'.repeat(1001) } });
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors).toHaveProperty('metadata');
+  });
+
+  it('rejects event with empty string in required metadata field', async () => {
+    const res = await request(app)
+      .post('/events')
+      .send({ ...validEvent, metadata: { page: '', action: 'click', component: 'btn' } });
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors).toHaveProperty('metadata');
+  });
+
+  it('rejects event with null userId (missing required field)', async () => {
+    const res = await request(app)
+      .post('/events')
+      .send({ ...validEvent, userId: null });
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors).toHaveProperty('userId');
+  });
+
+  it('accepts event with very large timestamp (year 3000+)', async () => {
+    // positive() solo requiere > 0, no impone límite superior.
+    // Este test documenta que el schema permite timestamps futuros.
+    const res = await request(app)
+      .post('/events')
+      .send({ ...validEvent, timestamp: 32503680000000 });
+
+    expect(res.status).toBe(202);
+  });
+
+  it('rejects event with negative timestamp', async () => {
+    const res = await request(app)
+      .post('/events')
+      .send({ ...validEvent, timestamp: -1 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.errors.fieldErrors).toHaveProperty('timestamp');
+  });
 });
 
 describe('GET /events', () => {
@@ -130,13 +178,29 @@ describe('GET /events', () => {
     });
   });
 
-  it('applies sort by timestamp descending and limit 20', async () => {
+  it('applies sort by timestamp descending and default limit 20', async () => {
     toArrayMock.mockResolvedValue([]);
 
     await request(app).get('/events');
 
     expect(cursorMock.sort).toHaveBeenCalledWith({ timestamp: -1 });
     expect(cursorMock.limit).toHaveBeenCalledWith(20);
+  });
+
+  it('applies client-supplied limit when ?limit=50', async () => {
+    toArrayMock.mockResolvedValue([]);
+
+    await request(app).get('/events').query({ limit: '50' });
+
+    expect(cursorMock.limit).toHaveBeenCalledWith(50);
+  });
+
+  it('caps limit at 1000 when client requests more (e.g. ?limit=2000)', async () => {
+    toArrayMock.mockResolvedValue([]);
+
+    await request(app).get('/events').query({ limit: '2000' });
+
+    expect(cursorMock.limit).toHaveBeenCalledWith(1000);
   });
 
   it('filters by multiple criteria at once', async () => {
@@ -178,6 +242,14 @@ describe('GET /events', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.errors.fieldErrors).toHaveProperty('fromTimestamp');
+  });
+
+  it('filters by toTimestamp only (without fromTimestamp)', async () => {
+    toArrayMock.mockResolvedValue([]);
+
+    await request(app).get('/events').query({ toTimestamp: '5000' });
+
+    expect(findMock).toHaveBeenCalledWith({ timestamp: { $lte: 5000 } });
   });
 
   it('returns 500 when MongoDB throws', async () => {

@@ -23,3 +23,16 @@ export async function postEvent(event: Omit<EventItem, '_id'>): Promise<void> {
 export async function deleteAllEvents(): Promise<void> {
   await axios.delete(`${BASE_URL}/events`);
 }
+
+export async function fetchTimeline(range: '24h' | '7d' | '30d'): Promise<Array<{ timeLabel: string; count: number }>> {
+  const res = await axios.get(`${BASE_URL}/metrics/timeline?range=${range}`);
+  return res.data.data;
+}
+
+export async function fetchUsersDistribution(): Promise<Array<{
+  userId: string;
+  types: Array<{ type: string; count: number }>;
+}>> {
+  const res = await axios.get(`${BASE_URL}/metrics/users-distribution`);
+  return res.data.data;
+}

@@ -109,4 +109,31 @@ describe('consume', () => {
 
     expect(insertOneMock).toHaveBeenCalledTimes(1);
   });
+
+  it('logs the error and continues when brpop throws', async () => {
+    jest.useFakeTimers();
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    brpopMock
+      .mockRejectedValueOnce(new Error('Redis connection lost'))
+      .mockResolvedValueOnce(['events:queue', JSON.stringify(validEvent)]);
+    insertOneMock.mockResolvedValue({ insertedId: 'id-1' });
+
+    let calls = 0;
+    const consumePromise = consume(() => calls++ < 2);
+
+    // El catch espera 3 s antes de reintentar; avanzamos el timer para no bloquear
+    await jest.runAllTimersAsync();
+    await consumePromise;
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining('Queue error'),
+      'Redis connection lost',
+    );
+    // Tras recuperarse procesa el evento del segundo brpop
+    expect(insertOneMock).toHaveBeenCalledTimes(1);
+
+    spy.mockRestore();
+    jest.useRealTimers();
+  });
 });

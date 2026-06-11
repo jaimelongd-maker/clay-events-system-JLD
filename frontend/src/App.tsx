@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { EventItem, Metrics } from './types';
-import { fetchEvents, fetchMetrics } from './api';
+import { fetchEvents, fetchMetrics, fetchTimeline, fetchUsersDistribution } from './api';
 import EventsTable from './components/EventsTable';
 import EventsChart from './components/EventsChart';
 import ChartFilter from './components/ChartFilter';
 import FilterSelector from './components/FilterSelector';
 import EventForm from './components/EventForm';
 import TopUsers from './components/TopUsers';
+import EventsTimeline from './components/EventsTimeline';
+import UserTypeDistribution from './components/UserTypeDistribution';
 import './App.css';
 
 const POLL_INTERVAL_MS = 5000;
@@ -74,6 +76,22 @@ function App() {
     allEventTypes.map((t, i) => [t, CHART_COLORS[i % CHART_COLORS.length]])
   );
 
+  const [timelineRange, setTimelineRange] = useState<'24h' | '7d' | '30d'>('24h');
+
+  const [timelineData, setTimelineData] = useState<Array<{ timeLabel: string; count: number }>>([]);
+  const [usersDistributionData, setUsersDistributionData] = useState<Array<{
+    userId: string;
+    types: Array<{ type: string; count: number }>;
+  }>>([]);
+
+  useEffect(() => {
+    fetchTimeline(timelineRange).then(setTimelineData).catch(() => {});
+  }, [timelineRange, refreshKey]);
+
+  useEffect(() => {
+    fetchUsersDistribution().then(setUsersDistributionData).catch(() => {});
+  }, [refreshKey]);
+
   // Solo muestra las barras de los tipos que el usuario tiene marcados
   const chartData = allEventTypes
     .filter(type => selectedTypesForChart.includes(type))
@@ -106,8 +124,26 @@ function App() {
       </section>
 
       <section className="section">
-        <h2>Top usuarios</h2>
+        <h2>Actividad por tiempo</h2>
+        <EventsTimeline
+          data={timelineData}
+          range={timelineRange}
+          onRangeChange={setTimelineRange}
+        />
+      </section>
+
+
+      <section className="section">
+        <h2>Top 3 usuarios</h2>
         <TopUsers users={metrics.topUsers} />
+      </section>
+
+      <section className="section">
+        <h2>Top {usersDistributionData.length > 0 ? usersDistributionData.length : 5} usuarios — Distribución por tipo</h2>
+        <UserTypeDistribution
+          data={usersDistributionData}
+          colorMap={colorMap}
+        />
       </section>
 
       <section className="section">

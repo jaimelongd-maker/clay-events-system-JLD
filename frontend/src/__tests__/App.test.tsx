@@ -2,27 +2,32 @@ import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
-import { fetchEvents, fetchMetrics } from '../api';
+import { fetchEvents, fetchMetrics, fetchTimeline, fetchUsersDistribution } from '../api';
 import { EventItem, Metrics } from '../types';
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
 jest.mock('../api', () => ({
-  fetchEvents:      jest.fn(),
-  fetchMetrics:     jest.fn(),
-  postEvent:        jest.fn(),
-  deleteAllEvents:  jest.fn(),
+  fetchEvents:            jest.fn(),
+  fetchMetrics:           jest.fn(),
+  postEvent:              jest.fn(),
+  deleteAllEvents:        jest.fn(),
+  fetchTimeline:          jest.fn().mockResolvedValue([]),
+  fetchUsersDistribution: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  BarChart:  ({ children }: { children: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
-  Bar:       ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  Cell:      () => null,
-  XAxis:     () => null,
-  YAxis:     () => null,
+  BarChart:    ({ children }: { children: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
+  LineChart:   ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Bar:         ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Line:        () => null,
+  Cell:        () => null,
+  XAxis:       () => null,
+  YAxis:       () => null,
   CartesianGrid: () => null,
-  Tooltip:   () => null,
+  Tooltip:     () => null,
+  Legend:      () => null,
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -46,8 +51,10 @@ const emptyMetrics: Metrics = { totalEvents: 0, eventsByType: {}, topUsers: [] }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const mockedFetchEvents  = jest.mocked(fetchEvents);
-const mockedFetchMetrics = jest.mocked(fetchMetrics);
+const mockedFetchEvents             = jest.mocked(fetchEvents);
+const mockedFetchMetrics            = jest.mocked(fetchMetrics);
+const mockedFetchTimeline           = jest.mocked(fetchTimeline);
+const mockedFetchUsersDistribution  = jest.mocked(fetchUsersDistribution);
 
 // Wait for the full initial load to propagate to the DOM.
 // Checking a DOM element (not just a mock call) ensures all setState calls settled.
@@ -60,6 +67,8 @@ describe('App – render', () => {
   beforeEach(() => {
     mockedFetchEvents.mockResolvedValue([mockEvent]);
     mockedFetchMetrics.mockResolvedValue(mockMetrics);
+    mockedFetchTimeline.mockResolvedValue([]);
+    mockedFetchUsersDistribution.mockResolvedValue([]);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -100,6 +109,11 @@ describe('App – render', () => {
 });
 
 describe('App – error handling', () => {
+  beforeEach(() => {
+    mockedFetchTimeline.mockResolvedValue([]);
+    mockedFetchUsersDistribution.mockResolvedValue([]);
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
     jest.useRealTimers();
@@ -144,6 +158,8 @@ describe('App – table filter', () => {
   beforeEach(() => {
     mockedFetchEvents.mockResolvedValue([]);
     mockedFetchMetrics.mockResolvedValue(mockMetrics);
+    mockedFetchTimeline.mockResolvedValue([]);
+    mockedFetchUsersDistribution.mockResolvedValue([]);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -154,7 +170,9 @@ describe('App – table filter', () => {
     // Wait for options to be populated from loaded metrics
     await waitFor(() => screen.getByRole('option', { name: 'click' }));
 
-    userEvent.selectOptions(screen.getByRole('combobox'), 'click');
+    // Use getByLabelText to target the table filter specifically (avoids ambiguity
+    // with the EventsTimeline range <select aria-label="Rango de tiempo">)
+    userEvent.selectOptions(screen.getByLabelText('Filtrar por tipo:'), 'click');
 
     await waitFor(() =>
       expect(mockedFetchEvents).toHaveBeenCalledWith('click')
@@ -166,10 +184,12 @@ describe('App – table filter', () => {
 
     await waitFor(() => screen.getByRole('option', { name: 'click' }));
 
-    userEvent.selectOptions(screen.getByRole('combobox'), 'click');
+    const tableFilter = screen.getByLabelText('Filtrar por tipo:');
+
+    userEvent.selectOptions(tableFilter, 'click');
     await waitFor(() => expect(mockedFetchEvents).toHaveBeenCalledWith('click'));
 
-    userEvent.selectOptions(screen.getByRole('combobox'), '');
+    userEvent.selectOptions(tableFilter, '');
     await waitFor(() =>
       // fetchEvents is called with (selectedTypeForTable || undefined); '' coerces to undefined
       expect(mockedFetchEvents).toHaveBeenCalledWith(undefined)
@@ -182,6 +202,8 @@ describe('App – polling', () => {
     jest.useFakeTimers();
     mockedFetchEvents.mockResolvedValue([]);
     mockedFetchMetrics.mockResolvedValue(emptyMetrics);
+    mockedFetchTimeline.mockResolvedValue([]);
+    mockedFetchUsersDistribution.mockResolvedValue([]);
   });
 
   afterEach(() => {
