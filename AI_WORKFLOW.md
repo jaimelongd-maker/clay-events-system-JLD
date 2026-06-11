@@ -185,6 +185,18 @@ Aprendizaje: las decisiones de presentación en la UI no deben contaminar el dis
 
 ---
 
+## Por qué Claude conversacional, no agentes ni plugins
+
+Consideré alternativas cuando empecé.
+
+Los agentes automatizan tareas, hubieran generado código más rápido. Pero para este desafío específico, donde el criterio técnico era lo central, hubiera perdido visibilidad en decisiones críticas. En caso de un timeline más apretado hubiese generado agentes para componentes basicos.
+
+Los plugins aceleran cosas. Pero agregaban capas de abstracción. Necesitaba entender cada decisión. Un agente genera, yo quería no solo generar sino aprender de cada herramienta utilizada. 
+
+Nota: Usé la extensión de Claude en VS Code durante el desarrollo en modo conversacional.
+
+---
+
 ## Números finales
 
 - Backend: 68 tests, 100% cobertura
